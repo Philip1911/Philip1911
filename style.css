@@ -54,6 +54,7 @@ body    {
     background-color: beige;
     padding: 2rem 0rem;
     gap: 1rem;
+    touch-action: none;
 }
 
 .card__title    {
