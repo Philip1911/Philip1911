@@ -24,7 +24,7 @@ const food = [
     },
 
     {
-        name: "Sandwich",
+        name: "Æg og Bacon Sandwich",
         images: "media/sandwich.jpg",
         rating: 1000,
     },
@@ -47,7 +47,7 @@ const food = [
     },
     {
         name: "Fried Chicken",
-        images: "media/friedchicken.jpg",
+        images: "media/friedchicken.jpg", 
         rating: 1000,
     },
     {
@@ -78,6 +78,11 @@ const food = [
     {
         name: "Steak",
         images: "media/steak.jpeg",
+        rating: 1000,
+    },
+    {
+        name: "Smørrebrød",
+        images: "media/bread.jpg",
         rating: 1000,
     },
 ]
@@ -194,4 +199,67 @@ function nextCompare(direction) {
 
     console.log(Math.abs(food[itemIndexLeft].rating - food[itemIndexRight].rating))
     
+    const leftCard = document.getElementById('leftCard');
+    const rightCard = document.getElementById('rightCard');
 
+    attachDragToCard(leftCard, 'left', () => nextCompare('left'));
+    attachDragToCard(rightCard, 'right', () => nextCompare('right'));
+
+    
+    function attachDragToCard(card, allowedDirection, voteCallback) {
+        let startX = null;
+        let maxDrag = 0; // Beregnes ved pointerdown
+    
+        card.addEventListener('pointerdown', (e) => {
+            startX = e.clientX;
+            // Beregn den maksimale trækafstand til skærmens kant
+            if (allowedDirection === 'left') {
+                maxDrag = card.getBoundingClientRect().left; // Afstand fra kortets venstre kant til venstre side af viewport
+            } else {
+                maxDrag = window.innerWidth - card.getBoundingClientRect().right; // Afstand fra kortets højre kant til højre side af viewport
+            }
+            card.setPointerCapture(e.pointerId);
+        });
+    
+        card.addEventListener('pointermove', (e) => {
+            if (startX === null) return;
+            const diff = e.clientX - startX;
+            // Sørg for, at bevægelsen kun reagerer i den ønskede retning
+            if ((allowedDirection === 'left' && diff < 0) || (allowedDirection === 'right' && diff > 0)) {
+                // Ratio udregnes ud fra maxDrag (ikke et fast threshold)
+                const ratio = Math.min(Math.abs(diff) / maxDrag, 1);
+                // Cubic ease-in for rotation (langsom start, hurtigere mod slutningen)
+                const easedRotation = Math.pow(ratio, 3);
+                // Rotation: Maks 45° når ratio er 1
+                const rotation = (diff > 0 ? 1 : -1) * easedRotation * 45;
+                const translateX = diff;
+                // Brug en sinusfunktion for en blid buet opadgående bevægelse (maksimal stigning 50px)
+                const translateY = -Math.sin(ratio * (Math.PI / 2)) * 50;
+                card.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg)`;
+    
+                // Skift baggrund til grøn, hvis brugeren er tæt på at trække helt til kanten (her ca. 90% af maxDrag)
+                card.style.backgroundColor = (ratio >= 0.9) ? "green" : "";
+            }
+        });
+    
+        card.addEventListener('pointerup', (e) => {
+            if (startX === null) return;
+            const diff = e.clientX - startX;
+            const ratio = Math.min(Math.abs(diff) / maxDrag, 1);
+            // Hvis brugeren har trukket mindst 90% af den maksimale afstand, udløses vote-callbacken
+            if (ratio >= 0.9) {
+                voteCallback();
+            }
+            // Nulstil transformation og baggrund
+            card.style.transform = "";
+            card.style.backgroundColor = "";
+            startX = null;
+        });
+    
+        card.addEventListener('pointercancel', () => {
+            card.style.transform = "";
+            card.style.backgroundColor = "";
+            startX = null;
+        });
+    }
+    
